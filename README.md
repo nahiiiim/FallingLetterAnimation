@@ -2,9 +2,6 @@
 
 This is a fun, interactive web-based physics simulation where letters and numbers fall from the top of the screen, realistically bouncing and piling up at the bottom. The project is built with plain HTML, CSS, and JavaScript, using the powerful **Matter.js** 2D physics engine.
 
-![Falling Letters Demo](https://i.imgur.com/8Q5Fp3U.gif)
-*(A GIF like this would be perfect for your README to showcase the interactivity)*
-
 ---
 ## ✨ Features
 

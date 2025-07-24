@@ -17,7 +17,7 @@ This is a fun, interactive web-based physics simulation where letters and number
 
 You can run this project directly. To host your own, you can use services like GitHub Pages.
 
-**[▶️ View a Live Demo Here](https://your-username.github.io/your-repo-name/)** *(Replace with your GitHub pages link)*
+**[▶️ View a Live Demo Here](https://nahiiiim.github.io/FallingLetterAnimation/)** 
 
 ---
 ## 🛠️ How to Run Locally

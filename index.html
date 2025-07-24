@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Letters with Realistic Physics</title>
+    <style>
+        /* Basic reset and styling for the body and canvas */
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevents scrollbars from appearing */
+            background-color: #1a1a1a; /* Dark background */
+        }
+        canvas {
+            display: block;
+            background-color: #1a1a1a;
+        }
+    </style>
+</head>
+<body>
+    <!-- Matter.js library for 2D physics simulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Matter.js Module Aliases ---
+            const {
+                Engine,
+                Render,
+                Runner,
+                Bodies,
+                Composite,
+                Mouse,
+                MouseConstraint,
+                Body,
+                Events // Added Events module
+            } = Matter;
+
+            // --- Engine and World Setup ---
+            const engine = Engine.create();
+            const world = engine.world;
+            world.gravity.y = 0.98;
+
+            // --- Renderer Setup ---
+            const render = Render.create({
+                element: document.body,
+                engine: engine,
+                options: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    wireframes: false,
+                    background: '#1a1a1a'
+                }
+            });
+
+            Render.run(render);
+
+            // --- Runner ---
+            const runner = Runner.create();
+            Runner.run(runner, engine);
+
+            // --- Create Static Boundaries (Ground and Walls) ---
+            const wallOptions = {
+                isStatic: true,
+                render: { visible: false }
+            };
+            
+            // **FIX:** Positioned the ground so its top edge is firmly at the bottom of the screen.
+            // The y-coordinate is the center of the body, so for a 60px tall ground,
+            // positioning it at window.innerHeight - 30 places its top edge at the bottom of the viewport.
+            const ground = Bodies.rectangle(window.innerWidth / 2, window.innerHeight - 30, window.innerWidth, 60, wallOptions);
+            const leftWall = Bodies.rectangle(-30, window.innerHeight / 2, 60, window.innerHeight, wallOptions);
+            const rightWall = Bodies.rectangle(window.innerWidth + 30, window.innerHeight / 2, 60, window.innerHeight, wallOptions);
+            Composite.add(world, [ground, leftWall, rightWall]);
+
+            // --- Create the Large Movable Obstruction Ball ---
+            const obstructionBall = Bodies.circle(window.innerWidth / 2, window.innerHeight / 3, 60, {
+                restitution: 0.7,
+                friction: 0.1,
+                render: {
+                    fillStyle: '#E91E63'
+                }
+            });
+            Composite.add(world, obstructionBall);
+
+            // --- Mouse Control for Moving the Ball ---
+            const mouse = Mouse.create(render.canvas);
+            const mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: {
+                        visible: false
+                    }
+                }
+            });
+            Composite.add(world, mouseConstraint);
+            render.mouse = mouse;
+
+            // --- Letter Factory ---
+            const letterChars = 'ABCDEFGHIJKLMONPQRSTUVWXYZ0123456789';
+            const letterColors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58'];
+
+            function createLetterBody() {
+                const character = letterChars[Math.floor(Math.random() * letterChars.length)];
+                const size = Math.random() * 30 + 25;
+                const x = Math.random() * (window.innerWidth - 100) + 50;
+                const y = -150;
+
+                // Create a rectangular physics body. This body will be invisible.
+                const letterBody = Bodies.rectangle(x, y, size * 0.7, size, {
+                     // Store character, size, and color info on the body's render property
+                     // for our custom rendering function to use later.
+                     label: character,
+                     density: 0.001,
+                     restitution: 0.5,
+                     friction: 0.5,
+                     render: {
+                         // Make the underlying physics body invisible
+                         visible: false,
+                         // Custom properties for our renderer
+                         fillStyle: letterColors[Math.floor(Math.random() * letterColors.length)],
+                         fontSize: size,
+                         fontFamily: 'Helvetica, Arial, sans-serif'
+                     }
+                });
+                
+                Composite.add(world, letterBody);
+            }
+
+            // --- Custom Rendering to Draw Letters ---
+            Events.on(render, 'afterRender', function() {
+                const context = render.context;
+                const bodies = Composite.allBodies(world);
+
+                context.save();
+                for (let i = 0; i < bodies.length; i++) {
+                    const body = bodies[i];
+
+                    // Check if the body is a letter (we use the label for this)
+                    if (letterChars.includes(body.label)) {
+                        context.translate(body.position.x, body.position.y);
+                        context.rotate(body.angle);
+                        
+                        context.font = `bold ${body.render.fontSize}px ${body.render.fontFamily}`;
+                        context.fillStyle = body.render.fillStyle;
+                        context.textAlign = 'center';
+                        context.textBaseline = 'middle';
+                        
+                        context.fillText(body.label, 0, 0);
+
+                        context.rotate(-body.angle);
+                        context.translate(-body.position.x, -body.position.y);
+                    }
+                }
+                context.restore();
+            });
+
+            // --- Spawn Letters Periodically ---
+            setInterval(createLetterBody, 300);
+
+            // --- Dynamic Adaptation to Screen Size ---
+            window.addEventListener('resize', () => {
+                render.canvas.width = window.innerWidth;
+                render.canvas.height = window.innerHeight;
+                render.options.width = window.innerWidth;
+                render.options.height = window.innerHeight;
+
+                // **FIX:** Reposition the ground correctly on resize.
+                Body.setPosition(ground, { x: window.innerWidth / 2, y: window.innerHeight - 30 });
+                Body.setPosition(leftWall, { x: -30, y: window.innerHeight / 2 });
+                Body.setPosition(rightWall, { x: window.innerWidth + 30, y: window.innerHeight / 2 });
+            });
+        });
+    </script>
+</body>
+</html>
